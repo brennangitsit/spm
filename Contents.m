@@ -1,5 +1,5 @@
 % Statistical Parametric Mapping
-% Version alpha1 (SPM12) 17-Oct-2024
+% Version dev (SPM12) <date>
 %__________________________________________________________________________
 %  ___  ____  __  __
 % / __)(  _ \(  \/  )  
