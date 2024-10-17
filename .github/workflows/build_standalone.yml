@@ -1,0 +1,191 @@
+name: Build Matlab Standalone
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "[0-9][0-9].[0-9][0-9]*"
+
+env:
+  MLM_LICENSE_TOKEN: ${{ secrets.MATLAB_BATCH_TOKEN }}
+
+jobs:
+  build_matlab_standalone:
+    name: Build Matlab Standalone
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # This actions compiles by default with the newest available matlab version
+        version: ["latest"] #["R2021a", "R2021b", "R2022a", "R2022b", "R2023a", "R2023b", "R2024a", "R2024b"]
+        os: ["ubuntu-latest", "macos-13", "macos-latest", "windows-latest"] # macos-13 has Intel architecture, macos-latest has Apple Silicon
+        include:
+          - os: ubuntu-latest
+            os_name: Linux
+          - os: macos-13
+            os_name: macOS_Intel
+          - os: macos-latest
+            os_name: macOS_Apple_Silicon
+          - os: windows-latest
+            os_name: Windows
+        exclude: # To exclude not working versions in case all Matlab targets are compiled
+          - os: windows-latest
+            version: "R2021a" # Compiler not available
+          - os: windows-latest
+            version: "R2021b" # Compiler not available
+          - os: macos-latest
+            version: "R2021a" # Apple Silicon version not available
+          - os: macos-latest
+            version: "R2021b" # Apple Silicon version not available
+          - os: macos-latest
+            version: "R2022a" # Apple Silicon version not available
+          - os: macos-latest
+            version: "R2022b" # Apple Silicon version not available
+          - os: macos-latest
+            version: "R2023a" # Apple Silicon version not available
+
+    steps:
+      - name: Set up MATLAB
+        id: setup_matlab
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          release: ${{matrix.version}}
+          products: MATLAB_Compiler
+
+      # We need to find the name of the matlab version used for compilation. Users need the same Matlab version to run it
+      - name: Extract MATLAB Version for Linux
+        if: runner.os == 'Linux'
+        run: |
+          # Get MATLAB installation path (e.g., /opt/hostedtoolcache/MATLAB/2024.2.999/x64/bin/matlab)
+          matlab_path=$(which matlab)
+          # display matlab_path
+          echo "Matlab path: $matlab_path"
+          # Go levels to get the folder containing the version
+          matlab_install_dir=$(dirname "$(dirname "$(dirname "$matlab_path")")")
+          echo "matlab_install_dir: $matlab_install_dir"
+          # Extract the base directory name (e.g., "2024.2.999") and use the first part as the version (R2024b)
+          matlab_base_version=$(basename "$matlab_install_dir" | cut -d. -f1,2)
+          echo "matlab_base_version: $matlab_base_version"
+          # Split the major and minor versions
+          IFS='.' read -r major minor <<< "$matlab_base_version"
+          if [[ "$minor" == "1" ]]; then
+              matlab_version="R${major}a"
+          elif [[ "$minor" == "2" ]]; then
+              matlab_version="R${major}b"
+          fi
+          echo "Extracted MATLAB Version: $matlab_version"
+          echo "MATLAB_VERSION=$matlab_version" >> $GITHUB_ENV
+
+      - name: Extract MATLAB Version for Mac
+        if: runner.os == 'macOS'
+        run: |
+          # Get MATLAB installation path (e.g., /Users/runner/hostedtoolcache/MATLAB/2024.2.999/arm64/MATLAB.app/bin/matlab)
+          matlab_path=$(which matlab)
+          # display matlab_path
+          echo "Matlab path: $matlab_path"
+          # Go levels to get the folder containing the version
+          matlab_install_dir=$(dirname "$(dirname "$(dirname "$(dirname "$matlab_path")")")")
+          echo "matlab_install_dir: $matlab_install_dir"
+          # Extract the base directory name (e.g., "2024.2.999") and use the first part as the version (R2024b)
+          matlab_base_version=$(basename "$matlab_install_dir" | cut -d. -f1,2)
+          echo "matlab_base_version: $matlab_base_version"
+          # Split the major and minor versions
+          IFS='.' read -r major minor <<< "$matlab_base_version"
+          if [[ "$minor" == "1" ]]; then
+              matlab_version="R${major}a"
+          elif [[ "$minor" == "2" ]]; then
+              matlab_version="R${major}b"
+          fi
+          echo "Extracted MATLAB Version: $matlab_version"
+          echo "MATLAB_VERSION=$matlab_version" >> $GITHUB_ENV
+
+      - name: Extract MATLAB Version for Windows
+        if: runner.os == 'Windows'
+        run: |
+          # Get MATLAB installation path (e.g., C:\hostedtoolcache\windows\MATLAB\2024.2.999\x64\bin\matlab.exe)
+          $matlab_path = (Get-Command matlab).Source
+          # Go levels to get the folder containing the version
+          $matlab_install_dir = echo "$matlab_path" | ForEach-Object { Split-Path -Parent $_ } | ForEach-Object { Split-Path -Parent $_ } | ForEach-Object { Split-Path -Parent $_ }
+          # Extract the base directory name (e.g., "R2024b")
+          $matlab_base_version = Split-Path "$matlab_install_dir" -Leaf
+          # Split the major and minor versions
+          $parts = $matlab_base_version -split '\.'
+          $major = $parts[0]
+          $minor = $parts[1]
+          # Determine the MATLAB version based on the minor version number
+          if ($minor -eq "1") {
+              $matlab_version = "R$major" + "a"
+          } elseif ($minor -eq "2") {
+              $matlab_version = "R$major" + "b"
+          }
+          echo "Extracted MATLAB Version: $matlab_version"
+          "MATLAB_VERSION=$matlab_version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Checkout SPM
+        uses: actions/checkout@v4
+
+      - name: Set the SPM version
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: 'Contents.m'
+          search-text: ' dev '
+          replacement-text: ' ${{ github.ref_name }} '
+      - name: Get the date Linux/Mac
+        if: runner.os != 'Windows'
+        run: |
+          echo "date=$(date '+%d-%b-%Y')" >> $GITHUB_ENV
+      - name: Get the date Windows
+        if: runner.os == 'Windows'
+        run: |
+          $date = Get-Date -Format "dd-MMM-yyyy"
+          echo "date=$date" >> $env:GITHUB_ENV
+      - name: Set the date of compilation
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: 'Contents.m'
+          search-text: <date>
+          replacement-text: ${{ env.date }}
+
+      # 1) Add SPM with subfolders to the path 2) Run spm_make_standalone in matlab
+      - name: Build Matlab Standalone
+        uses: matlab-actions/run-command@v2
+        with:
+          command: |
+            addpath(genpath('.'));
+            savepath;
+            spm_make_standalone
+
+      # Compress to tar.gz or zip
+      - name: Compress Unix
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          cd ..
+          mv standalone spm12
+          zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip spm12
+
+      - name: Compress Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          cd ..
+          Rename-Item -Path 'standalone' -NewName 'spm12'
+          Compress-Archive -Path 'spm12' -DestinationPath 'spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip'
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ../spm*.zip
+
+      # 1) Delete standalone spm*.zip 2) Zip up SPM
+      - name: Create SPM zip (not standalone)
+        if: runner.os == 'Linux' && matrix.version == 'latest'
+        run: |
+          cd ..
+          rm spm*.zip # standalone zip
+          rm -r spm12 # standalone folder
+          mkdir spm12 # spm folder to release
+          mv spm/* spm12
+          zip -r spm_${{ github.ref_name }}.zip spm12
+
+      - name: Release SPM
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ../spm*.zip
