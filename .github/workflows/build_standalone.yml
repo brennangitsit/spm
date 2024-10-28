@@ -137,7 +137,7 @@ jobs:
         uses: richardrigutins/replace-in-files@v2
         with:
           files: 'Contents.m'
-          search-text: ' dev '
+          search-text: ' 00.00 '
           replacement-text: ' ${{ github.ref_name }} '
 
       - name: Get the date (Linux/Mac)

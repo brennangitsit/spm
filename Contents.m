@@ -1,5 +1,5 @@
 % Statistical Parametric Mapping
-% Version dev (SPM12) <date>
+% Version 00.00 (SPM) <date>
 %__________________________________________________________________________
 %  ___  ____  __  __
 % / __)(  _ \(  \/  )  
