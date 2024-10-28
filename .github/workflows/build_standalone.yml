@@ -123,21 +123,33 @@ jobs:
       - name: Checkout SPM
         uses: actions/checkout@v4
 
+      - name: Delete hidden files and folders (Linux/Mac)
+        if: runner.os != 'Windows'
+        run: rm -rf .[^.]*
+      - name: Delete hidden files and folders (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Get-ChildItem -Path "." -Recurse -Force |
+          Where-Object { $_.Name -match '^\.' } |
+          Remove-Item -Recurse -Force
+
       - name: Set the SPM version
         uses: richardrigutins/replace-in-files@v2
         with:
           files: 'Contents.m'
           search-text: ' dev '
           replacement-text: ' ${{ github.ref_name }} '
-      - name: Get the date Linux/Mac
+
+      - name: Get the date (Linux/Mac)
         if: runner.os != 'Windows'
         run: |
           echo "date=$(date '+%d-%b-%Y')" >> $GITHUB_ENV
-      - name: Get the date Windows
+      - name: Get the date (Windows)
         if: runner.os == 'Windows'
         run: |
           $date = Get-Date -Format "dd-MMM-yyyy"
           echo "date=$date" >> $env:GITHUB_ENV
+
       - name: Set the date of compilation
         uses: richardrigutins/replace-in-files@v2
         with:
@@ -185,7 +197,6 @@ jobs:
           cd ..
           rm spm_standalone*.zip # standalone zip
           rm -r spm_standalone # standalone folder
-          rm -rf spm/.[^.]* # hidden files and folders
           zip -r spm_${{ github.ref_name }}.zip spm
 
       - name: Release SPM
