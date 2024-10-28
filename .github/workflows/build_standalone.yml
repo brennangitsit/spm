@@ -18,7 +18,7 @@ jobs:
         # This actions compiles by default with the newest available matlab version
         version: ["latest"] #["R2021a", "R2021b", "R2022a", "R2022b", "R2023a", "R2023b", "R2024a", "R2024b"]
         os: ["ubuntu-latest", "macos-13", "macos-latest", "windows-latest"] # macos-13 has Intel architecture, macos-latest has Apple Silicon
-        include:
+        include: # These includes are just giving the OSs additional names
           - os: ubuntu-latest
             os_name: Linux
           - os: macos-13
@@ -51,7 +51,7 @@ jobs:
           release: ${{matrix.version}}
           products: MATLAB_Compiler
 
-      # We need to find the name of the matlab version used for compilation. Users need the same Matlab version to run it
+      # We need to find the name of the matlab version used for compilation. Users need the same Matlab Runtime version to run it
       - name: Extract MATLAB Version for Linux
         if: runner.os == 'Linux'
         run: |
@@ -153,37 +153,39 @@ jobs:
             addpath(genpath('.'));
             savepath;
             spm_make_standalone
+            mkdir('runtime_installer');
+            if isMATLABReleaseOlderThan("R2024a")
+              compiler.runtime.customInstaller('Runtime_${{ env.MATLAB_VERSION }}_for_spm_standalone_${{ github.ref_name }}', '../standalone/requiredMCRProducts.txt', OutputDir='../runtime_installer');
+            end
 
       # Compress to tar.gz or zip
       - name: Compress Unix
         if: ${{ runner.os != 'Windows' }}
         run: |
           cd ..
-          mv standalone spm12
-          zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip spm12
+          mv standalone spm_standalone
+          zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip spm_standalone runtime_installer
 
       - name: Compress Windows
         if: ${{ runner.os == 'Windows' }}
         run: |
           cd ..
-          Rename-Item -Path 'standalone' -NewName 'spm12'
-          Compress-Archive -Path 'spm12' -DestinationPath 'spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip'
+          Rename-Item -Path 'standalone' -NewName 'spm_standalone'
+          Compress-Archive -Path @('spm_standalone', 'runtime_installer') -DestinationPath 'spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip'
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ../spm*.zip
+          files: ../spm_standalone*.zip
 
-      # 1) Delete standalone spm*.zip 2) Zip up SPM
-      - name: Create SPM zip (not standalone)
+      # 1) Delete spm_standalone*.zip 2) Zip up SPM <- These steps are only done once (Linux && latest)
+      - name: Create SPM zip for regular release (not standalone)
         if: runner.os == 'Linux' && matrix.version == 'latest'
         run: |
           cd ..
-          rm spm*.zip # standalone zip
-          rm -r spm12 # standalone folder
-          mkdir spm12 # spm folder to release
-          mv spm/* spm12
-          zip -r spm_${{ github.ref_name }}.zip spm12
+          rm spm_standalone*.zip # standalone zip
+          rm -r spm_standalone # standalone folder
+          zip -r spm_${{ github.ref_name }}.zip spm
 
       - name: Release SPM
         uses: softprops/action-gh-release@v2
