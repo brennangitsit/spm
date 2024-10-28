@@ -185,6 +185,7 @@ jobs:
           cd ..
           rm spm_standalone*.zip # standalone zip
           rm -r spm_standalone # standalone folder
+          rm -rf spm/.[^.]* # hidden files and folders
           zip -r spm_${{ github.ref_name }}.zip spm
 
       - name: Release SPM
