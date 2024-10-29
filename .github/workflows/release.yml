@@ -1,4 +1,4 @@
-name: Build Matlab Standalone
+name: Release SPM (code and Matlab Standalone)
 on:
   workflow_dispatch:
   push:
@@ -8,9 +8,27 @@ on:
 env:
   MLM_LICENSE_TOKEN: ${{ secrets.MATLAB_BATCH_TOKEN }}
 
-jobs:
+jobs:  
+  release_spm:
+    name: Release SPM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout SPM
+        uses: actions/checkout@v4
+  
+      - name: Create SPM zip for regular release (not standalone)
+        run: |
+          cd ..
+          rm -rf spm/.[^.]* # remove hidden folders and files like .git
+          zip -r spm_${{ github.ref_name }}.zip spm
+
+      - name: Release SPM
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ../spm*.zip
+
   build_matlab_standalone:
-    name: Build Matlab Standalone
+    name: Build and Release Matlab Standalone
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -113,17 +131,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ../spm_standalone*.zip
-
-      # 1) Delete spm_standalone*.zip 2) Zip up SPM <- These steps are only done once (Linux && latest)
-      - name: Create SPM zip for regular release (not standalone)
-        if: runner.os == 'Linux' && matrix.version == 'latest'
-        run: |
-          cd ..
-          rm spm_standalone*.zip # standalone zip
-          rm -r spm_standalone # standalone folder
-          zip -r spm_${{ github.ref_name }}.zip spm
-
-      - name: Release SPM
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ../spm*.zip
+  
