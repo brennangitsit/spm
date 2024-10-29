@@ -125,12 +125,19 @@ jobs:
         run: choco install zip -y
         shell: bash
 
-      - name: Compress to ZIP (Linux and macOS)
+      - name: Compress to ZIP (latest)
+        if: matrix.version == 'latest'
+        run: |
+          cd ..
+          mv standalone spm_standalone
+          zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}.zip spm_standalone runtime_installer
+      - name: Compress to ZIP (specific MCR version)
+        if: matrix.version != 'latest'
         run: |
           cd ..
           mv standalone spm_standalone
           zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip spm_standalone runtime_installer
-    
+
       - name: Release standalone
         uses: softprops/action-gh-release@v2
         with:
