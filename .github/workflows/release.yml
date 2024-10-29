@@ -1,4 +1,4 @@
-name: Release SPM (code and Matlab Standalone)
+name: Release SPM (code and MATLAB Standalone)
 on:
   workflow_dispatch:
   push:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout SPM
         uses: actions/checkout@v4
   
-      - name: Create SPM zip for regular release (not standalone)
+      - name: Create SPM ZIP for regular release (not standalone)
         run: |
           cd ..
           rm -rf spm/.[^.]* # remove hidden folders and files like .git
@@ -28,7 +28,7 @@ jobs:
           files: ../spm*.zip
 
   build_matlab_standalone:
-    name: Build and Release Matlab Standalone
+    name: Build and Release MATLAB Standalone
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -69,7 +69,7 @@ jobs:
           release: ${{matrix.version}}
           products: MATLAB_Compiler
 
-      - name: Extract MATLAB Version to file
+      - name: Extract MATLAB version to file
         uses: matlab-actions/run-command@v2        
         with:
           command: |
@@ -77,14 +77,14 @@ jobs:
             fprintf(fileID, matlabRelease.Release)
             fclose(fileID)
       - name: Set environment variable with MATLAB version
+        shell: bash # Works on Windows as well because of shell: bash
         run: |
           matlab_release=$(cat matlab_release.txt)
           echo "MATLAB_VERSION=$matlab_release" >> $GITHUB_ENV
       
       - name: Checkout SPM
         uses: actions/checkout@v4
-
-        # Works on Windows as well because of shell: bash
+        
       - name: Delete hidden files and folders
         shell: bash
         run: rm -rf .[^.]*
@@ -108,7 +108,7 @@ jobs:
           replacement-text: ${{ env.date }}
 
       # 1) Add SPM with subfolders to the path 2) Run spm_make_standalone in matlab 3) Create runtime_installer
-      - name: Build Matlab Standalone
+      - name: Build MATLAB standalone
         uses: matlab-actions/run-command@v2
         with:
           command: |
@@ -120,14 +120,14 @@ jobs:
               compiler.runtime.customInstaller('Runtime_${{ env.MATLAB_VERSION }}_for_spm_standalone_${{ github.ref_name }}', '../standalone/requiredMCRProducts.txt', OutputDir='../runtime_installer');
             end
 
-      - name: Compress to zip
+      - name: Compress to ZIP
         shell: bash
         run: |
           cd ..
           mv standalone spm_standalone
           zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip spm_standalone runtime_installer
 
-      - name: Release
+      - name: Release standalone
         uses: softprops/action-gh-release@v2
         with:
           files: ../spm_standalone*.zip
