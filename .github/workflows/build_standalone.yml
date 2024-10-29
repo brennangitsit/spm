@@ -123,15 +123,9 @@ jobs:
       - name: Checkout SPM
         uses: actions/checkout@v4
 
-      - name: Delete hidden files and folders (Linux/Mac)
-        if: runner.os != 'Windows'
+      - name: Delete hidden files and folders
+        shell: bash
         run: rm -rf .[^.]*
-      - name: Delete hidden files and folders (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          Get-ChildItem -Path "." -Recurse -Force |
-          Where-Object { $_.Name -match '^\.' } |
-          Remove-Item -Recurse -Force
 
       - name: Set the SPM version
         uses: richardrigutins/replace-in-files@v2
