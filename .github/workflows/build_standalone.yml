@@ -51,75 +51,18 @@ jobs:
           release: ${{matrix.version}}
           products: MATLAB_Compiler
 
-      # We need to find the name of the matlab version used for compilation. Users need the same Matlab Runtime version to run it
-      - name: Extract MATLAB Version for Linux
-        if: runner.os == 'Linux'
+      - name: Extract MATLAB Version to file
+        uses: matlab-actions/run-command@v2        
+        with:
+          command: |
+            fileID = fopen('matlab_release.txt', 'w')
+            fprintf(fileID, matlabRelease.Release)
+            fclose(fileID)
+      - name: Set environment variable with MATLAB version
         run: |
-          # Get MATLAB installation path (e.g., /opt/hostedtoolcache/MATLAB/2024.2.999/x64/bin/matlab)
-          matlab_path=$(which matlab)
-          # display matlab_path
-          echo "Matlab path: $matlab_path"
-          # Go levels to get the folder containing the version
-          matlab_install_dir=$(dirname "$(dirname "$(dirname "$matlab_path")")")
-          echo "matlab_install_dir: $matlab_install_dir"
-          # Extract the base directory name (e.g., "2024.2.999") and use the first part as the version (R2024b)
-          matlab_base_version=$(basename "$matlab_install_dir" | cut -d. -f1,2)
-          echo "matlab_base_version: $matlab_base_version"
-          # Split the major and minor versions
-          IFS='.' read -r major minor <<< "$matlab_base_version"
-          if [[ "$minor" == "1" ]]; then
-              matlab_version="R${major}a"
-          elif [[ "$minor" == "2" ]]; then
-              matlab_version="R${major}b"
-          fi
-          echo "Extracted MATLAB Version: $matlab_version"
-          echo "MATLAB_VERSION=$matlab_version" >> $GITHUB_ENV
-
-      - name: Extract MATLAB Version for Mac
-        if: runner.os == 'macOS'
-        run: |
-          # Get MATLAB installation path (e.g., /Users/runner/hostedtoolcache/MATLAB/2024.2.999/arm64/MATLAB.app/bin/matlab)
-          matlab_path=$(which matlab)
-          # display matlab_path
-          echo "Matlab path: $matlab_path"
-          # Go levels to get the folder containing the version
-          matlab_install_dir=$(dirname "$(dirname "$(dirname "$(dirname "$matlab_path")")")")
-          echo "matlab_install_dir: $matlab_install_dir"
-          # Extract the base directory name (e.g., "2024.2.999") and use the first part as the version (R2024b)
-          matlab_base_version=$(basename "$matlab_install_dir" | cut -d. -f1,2)
-          echo "matlab_base_version: $matlab_base_version"
-          # Split the major and minor versions
-          IFS='.' read -r major minor <<< "$matlab_base_version"
-          if [[ "$minor" == "1" ]]; then
-              matlab_version="R${major}a"
-          elif [[ "$minor" == "2" ]]; then
-              matlab_version="R${major}b"
-          fi
-          echo "Extracted MATLAB Version: $matlab_version"
-          echo "MATLAB_VERSION=$matlab_version" >> $GITHUB_ENV
-
-      - name: Extract MATLAB Version for Windows
-        if: runner.os == 'Windows'
-        run: |
-          # Get MATLAB installation path (e.g., C:\hostedtoolcache\windows\MATLAB\2024.2.999\x64\bin\matlab.exe)
-          $matlab_path = (Get-Command matlab).Source
-          # Go levels to get the folder containing the version
-          $matlab_install_dir = echo "$matlab_path" | ForEach-Object { Split-Path -Parent $_ } | ForEach-Object { Split-Path -Parent $_ } | ForEach-Object { Split-Path -Parent $_ }
-          # Extract the base directory name (e.g., "R2024b")
-          $matlab_base_version = Split-Path "$matlab_install_dir" -Leaf
-          # Split the major and minor versions
-          $parts = $matlab_base_version -split '\.'
-          $major = $parts[0]
-          $minor = $parts[1]
-          # Determine the MATLAB version based on the minor version number
-          if ($minor -eq "1") {
-              $matlab_version = "R$major" + "a"
-          } elseif ($minor -eq "2") {
-              $matlab_version = "R$major" + "b"
-          }
-          echo "Extracted MATLAB Version: $matlab_version"
-          "MATLAB_VERSION=$matlab_version" | Out-File -FilePath $env:GITHUB_ENV -Append
-
+          matlab_release=$(cat matlab_release.txt)
+          echo "MATLAB_VERSION=$matlab_release" >> $GITHUB_ENV
+      
       - name: Checkout SPM
         uses: actions/checkout@v4
 
