@@ -123,6 +123,7 @@ jobs:
       - name: Checkout SPM
         uses: actions/checkout@v4
 
+        # Works on Windows as well because of shell: bash
       - name: Delete hidden files and folders
         shell: bash
         run: rm -rf .[^.]*
