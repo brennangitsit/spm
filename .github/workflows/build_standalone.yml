@@ -134,15 +134,9 @@ jobs:
           search-text: ' 00.00 '
           replacement-text: ' ${{ github.ref_name }} '
 
-      - name: Get the date (Linux/Mac)
-        if: runner.os != 'Windows'
-        run: |
-          echo "date=$(date '+%d-%b-%Y')" >> $GITHUB_ENV
-      - name: Get the date (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          $date = Get-Date -Format "dd-MMM-yyyy"
-          echo "date=$date" >> $env:GITHUB_ENV
+      - name: Get the date
+        shell: bash
+        run: echo "date=$(date '+%d-%b-%Y')" >> $GITHUB_ENV
 
       - name: Set the date of compilation
         uses: richardrigutins/replace-in-files@v2
@@ -151,7 +145,7 @@ jobs:
           search-text: <date>
           replacement-text: ${{ env.date }}
 
-      # 1) Add SPM with subfolders to the path 2) Run spm_make_standalone in matlab
+      # 1) Add SPM with subfolders to the path 2) Run spm_make_standalone in matlab 3) Create runtime_installer
       - name: Build Matlab Standalone
         uses: matlab-actions/run-command@v2
         with:
@@ -164,20 +158,12 @@ jobs:
               compiler.runtime.customInstaller('Runtime_${{ env.MATLAB_VERSION }}_for_spm_standalone_${{ github.ref_name }}', '../standalone/requiredMCRProducts.txt', OutputDir='../runtime_installer');
             end
 
-      # Compress to tar.gz or zip
-      - name: Compress Unix
-        if: ${{ runner.os != 'Windows' }}
+      - name: Compress to zip
+        shell: bash
         run: |
           cd ..
           mv standalone spm_standalone
           zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip spm_standalone runtime_installer
-
-      - name: Compress Windows
-        if: ${{ runner.os == 'Windows' }}
-        run: |
-          cd ..
-          Rename-Item -Path 'standalone' -NewName 'spm_standalone'
-          Compress-Archive -Path @('spm_standalone', 'runtime_installer') -DestinationPath 'spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_${{ env.MATLAB_VERSION }}.zip'
 
       - name: Release
         uses: softprops/action-gh-release@v2
