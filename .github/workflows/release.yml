@@ -8,14 +8,14 @@ on:
 env:
   MLM_LICENSE_TOKEN: ${{ secrets.MATLAB_BATCH_TOKEN }}
 
-jobs:  
+jobs:
   release_spm:
     name: Release SPM
     runs-on: ubuntu-latest
     steps:
       - name: Checkout SPM
         uses: actions/checkout@v4
-  
+
       - name: Create SPM ZIP for regular release (not standalone)
         run: |
           cd ..
@@ -70,7 +70,7 @@ jobs:
           products: MATLAB_Compiler
 
       - name: Extract MATLAB version to file
-        uses: matlab-actions/run-command@v2        
+        uses: matlab-actions/run-command@v2
         with:
           command: |
             fileID = fopen('matlab_release.txt', 'w')
@@ -81,10 +81,10 @@ jobs:
         run: |
           matlab_release=$(cat matlab_release.txt)
           echo "MATLAB_VERSION=$matlab_release" >> $GITHUB_ENV
-      
+
       - name: Checkout SPM
         uses: actions/checkout@v4
-        
+
       - name: Delete hidden files and folders
         shell: bash
         run: rm -rf .[^.]*
@@ -92,9 +92,9 @@ jobs:
       - name: Set the SPM version
         uses: richardrigutins/replace-in-files@v2
         with:
-          files: 'Contents.m'
-          search-text: ' 00.00 '
-          replacement-text: ' ${{ github.ref_name }} '
+          files: "Contents.m"
+          search-text: " 00.00 "
+          replacement-text: " ${{ github.ref_name }} "
 
       - name: Get the date
         shell: bash
@@ -103,7 +103,7 @@ jobs:
       - name: Set the date of compilation
         uses: richardrigutins/replace-in-files@v2
         with:
-          files: 'Contents.m'
+          files: "Contents.m"
           search-text: <date>
           replacement-text: ${{ env.date }}
 
@@ -158,9 +158,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: spm/spm-docker
           event-type: trigger-container-build
-          client-payload: '{
-            "matlab_version": "${{ env.MATLAB_VERSION }}",
-            "agree_to_matlab_runtime_license": "yes",
-            "spm_release": "${{ env.SPM_RELEASE }}",
-            "spm_revision": "${{ env.SPM_REVISION }}"}'
-    
+          client-payload: |-
+            {
+              "matlab_version": "${{ env.MATLAB_VERSION }}",
+              "agree_to_matlab_runtime_license": "yes",
+              "spm_release": "${{ env.SPM_RELEASE }}",
+              "spm_revision": "${{ env.SPM_REVISION }}",
+            }
