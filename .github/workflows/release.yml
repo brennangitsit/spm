@@ -59,6 +59,9 @@ jobs:
             fileID = fopen('matlab_release.txt', 'w')
             fprintf(fileID, matlabRelease.Release)
             fclose(fileID)
+        timeout-minutes: 2
+        continue-on-error: true
+
       - name: Set environment variable with MATLAB version
         shell: bash # Works on Windows as well because of shell: bash
         run: |
