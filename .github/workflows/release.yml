@@ -142,4 +142,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ../spm_standalone*.zip
-  
+
+      # Trigger Container Build in spm-docker (triggers only once for OS=Linux and MATLAB version=latest)
+      - name: Parse tag into SPM_RELEASE and SPM_REVISION
+        if: runner.os == 'Linux' && matrix.version != 'latest'
+        run: |
+          tag="${{ github.ref_name }}"
+          echo "SPM_RELEASE=${tag:0:5}" >> $GITHUB_ENV
+          echo "SPM_REVISION=${tag:6}" >> $GITHUB_ENV
+
+      - name: Trigger workflow in spm-docker
+        if: runner.os == 'Linux' && matrix.version != 'latest'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: spm/spm-docker
+          event-type: trigger-container-build
+          client-payload: '{
+            "matlab_version": "${{ env.MATLAB_VERSION }}",
+            "agree_to_matlab_runtime_license": "yes",
+            "spm_release": "${{ env.SPM_RELEASE }}",
+            "spm_revision": "${{ env.SPM_REVISION }}"}'
+    
