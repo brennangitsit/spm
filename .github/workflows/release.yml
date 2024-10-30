@@ -10,25 +10,6 @@ env:
   PRERELEASE: true
 
 jobs:
-  release_spm:
-    name: Release SPM
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout SPM
-        uses: actions/checkout@v4
-
-      - name: Create SPM ZIP for regular release (not standalone)
-        run: |
-          cd ..
-          rm -rf spm/.[^.]* # remove hidden folders and files like .git
-          zip -r spm_${{ github.ref_name }}.zip spm
-
-      - name: Release SPM
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: ${{ env.PRERELEASE }}
-          files: ../spm*.zip
-
   build_matlab_standalone:
     name: Build and Release MATLAB Standalone
     runs-on: ${{ matrix.os }}
@@ -146,7 +127,22 @@ jobs:
           prerelease: ${{ env.PRERELEASE }}
           files: ../spm_standalone*.zip
 
-      # Trigger Container Build in spm-docker (triggers only once for OS=Linux and MATLAB version=latest)
+      # The next steps are only performed once for OS=Linux and MATLAB version=latest
+      # Release SPM (not standalone)
+      - name: Create SPM ZIP for regular release (not standalone)
+        if: runner.os == 'Linux' && matrix.version == 'latest'
+        run: |
+          cd ..
+          zip -r spm_${{ github.ref_name }}.zip spm
+
+      - name: Release SPM
+        if: runner.os == 'Linux' && matrix.version == 'latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{ env.PRERELEASE }}
+          files: ../spm*.zip
+
+      # Trigger Container Build in spm-docker 
       - name: Parse tag into SPM_RELEASE and SPM_REVISION
         if: runner.os == 'Linux' && matrix.version == 'latest'
         run: |
