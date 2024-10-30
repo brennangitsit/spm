@@ -166,5 +166,5 @@ jobs:
               "matlab_version": "${{ env.MATLAB_VERSION }}",
               "agree_to_matlab_runtime_license": "yes",
               "spm_release": "${{ env.SPM_RELEASE }}",
-              "spm_revision": "${{ env.SPM_REVISION }}",
+              "spm_revision": "${{ env.SPM_REVISION }}"
             }
