@@ -7,6 +7,7 @@ on:
 
 env:
   MLM_LICENSE_TOKEN: ${{ secrets.MATLAB_BATCH_TOKEN }}
+  PRERELEASE: true
 
 jobs:
   release_spm:
@@ -25,6 +26,7 @@ jobs:
       - name: Release SPM
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: ${{ env.PRERELEASE }}
           files: ../spm*.zip
 
   build_matlab_standalone:
@@ -141,6 +143,7 @@ jobs:
       - name: Release standalone
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: ${{ env.PRERELEASE }}
           files: ../spm_standalone*.zip
 
       # Trigger Container Build in spm-docker (triggers only once for OS=Linux and MATLAB version=latest)
