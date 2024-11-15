@@ -59,8 +59,6 @@ jobs:
             fileID = fopen('matlab_release.txt', 'w')
             fprintf(fileID, matlabRelease.Release)
             fclose(fileID)
-        timeout-minutes: 2
-        continue-on-error: true
 
       - name: Set environment variable with MATLAB version
         shell: bash # Works on Windows as well because of shell: bash
@@ -76,6 +74,13 @@ jobs:
         run: rm -rf .[^.]*
 
       - name: Set the SPM version
+        shell: bash
+        run: |
+          tag="${{ github.ref_name }}"
+          SPM_RELEASE=${tag:0:5}
+          sed -i 's/(SPM[0-9][0-9])/(${SPM_RELEASE})/g' Contents.m
+
+      - name: Set the SPM revision
         uses: richardrigutins/replace-in-files@v2
         with:
           files: "Contents.m"
