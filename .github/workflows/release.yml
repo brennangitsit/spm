@@ -59,7 +59,7 @@ jobs:
             fileID = fopen('matlab_release.txt', 'w')
             fprintf(fileID, matlabRelease.Release)
             fclose(fileID)
-        timeout-minutes: 2
+        timeout-minutes: 2 # sometimes this step hangs when closing matlab
         continue-on-error: true
 
       - name: Set environment variable with MATLAB version
@@ -76,6 +76,13 @@ jobs:
         run: rm -rf .[^.]*
 
       - name: Set the SPM version
+        shell: bash
+        run: |
+          tag="${{ github.ref_name }}"
+          SPM_VERSION=${tag:0:2}
+          sed -i "s/(SPM[0-9][0-9])/(SPM${SPM_VERSION})/g" Contents.m
+
+      - name: Set the SPM revision
         uses: richardrigutins/replace-in-files@v2
         with:
           files: "Contents.m"
