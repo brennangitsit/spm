@@ -59,7 +59,7 @@ jobs:
             fileID = fopen('matlab_release.txt', 'w')
             fprintf(fileID, matlabRelease.Release)
             fclose(fileID)
-        timeout-minutes: 2
+        timeout-minutes: 2 # sometimes this step hangs when closing matlab
         continue-on-error: true
 
       - name: Set environment variable with MATLAB version
@@ -75,23 +75,20 @@ jobs:
         shell: bash
         run: rm -rf .[^.]*
 
-      - name: Set the SPM version
-        uses: richardrigutins/replace-in-files@v2
-        with:
-          files: "Contents.m"
-          search-text: " 00.00 "
-          replacement-text: " ${{ github.ref_name }} "
-
       - name: Get the date
         shell: bash
         run: echo "date=$(date '+%d-%b-%Y')" >> $GITHUB_ENV
 
-      - name: Set the date of compilation
-        uses: richardrigutins/replace-in-files@v2
-        with:
-          files: "Contents.m"
-          search-text: <date>
-          replacement-text: ${{ env.date }}
+      # Replace the second line of Contents.m
+      - name: Set Version and date in Contents.m
+        shell: bash
+        env:
+          date: ${{ env.date }}
+        run: |
+          tag="${{ github.ref_name }}"
+          SPM_RELEASE=${tag:0:5}
+          version_line="% Version $tag (SPM${SPM_RELEASE}) $date"
+          sed -i "2c $version_line" Contents.m
 
       # 1) Add SPM with subfolders to the path 2) Run spm_make_standalone in matlab 3) Create runtime_installer
       - name: Build MATLAB standalone
