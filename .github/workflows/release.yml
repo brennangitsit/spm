@@ -109,8 +109,15 @@ jobs:
             spm_make_standalone
             mkdir('runtime_installer');
             if ~isMATLABReleaseOlderThan("R2024b")
-              compiler.runtime.customInstaller('Runtime_${{ env.MATLAB_VERSION }}_for_spm_standalone_${{ github.ref_name }}', '../standalone/requiredMCRProducts.txt', OutputDir='../runtime_installer');
+              compiler.runtime.customInstaller('spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_Matlab_Runtime_${{ env.MATLAB_VERSION }}', '../standalone/requiredMCRProducts.txt', OutputDir='../runtime_installer');
             end
+
+      - name: Release standalone custom installer
+        if: matrix.version == 'latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{ env.PRERELEASE }}
+          files: ../runtime_installer/Runtime_*
 
       - name: Install zip on Windows
         if: runner.os == 'Windows'
