@@ -136,6 +136,19 @@ jobs:
           prerelease: ${{ env.PRERELEASE }}
           files: ../spm_standalone*.zip
 
+      - name: Compress Runtime Installer to ZIP
+        if: matrix.version == 'latest'
+        run: |
+          cd ..
+          zip -r spm_standalone_${{ github.ref_name }}_${{ matrix.os_name }}_matlab_runtime_installer.zip runtime_installer
+
+      - name: Release standalone custom installer
+        if: matrix.version == 'latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{ env.PRERELEASE }}
+          files: ../*matlab_runtime_installer*.zip
+
       # The next steps are only performed once for OS=Linux and MATLAB version=latest
       # Release SPM (not standalone)
       - name: Create SPM ZIP for regular release (not standalone)
