@@ -46,8 +46,6 @@ if ~isfield(S, 'colourbar'),    S.colourbar = false; end
 if ~isfield(S, 'invertcolour'), S.invertcolour = false; end
 if ~isfield(S, 'dp'),           S.dp = 1; end
 if ~isfield(S, 'fontname'),     S.fontname = 'Helvetica'; end
-if ~isfield(S, 'clim'),         S.clim = []; end
-
 
 M = [-2 0 0 92;0 2 0 -128;0 0 2 -74;0 0 0 1];
 dim = [91 109 91];
@@ -61,14 +59,10 @@ else
 end
 
 [~,id] = sort(abs(X),'ascend');
-if isempty(S.clim)
-    if div
-        [~,bin] = histc(X,linspace(-max(abs(X)),max(abs(X)),65));
-    else
-        [~,bin] = histc(X,linspace(min(abs(X)),max(abs(X)),65));
-    end
+if div
+    [~,bin] = histc(X,linspace(-max(abs(X)),max(abs(X)),65));
 else
-    [~,bin] = histc(X,linspace(S.clim(1),S.clim(2),65));
+    [~,bin] = histc(X,linspace(min(abs(X)),max(abs(X)),65));
 end
 
 % saggital plane
@@ -139,17 +133,12 @@ if S.colourbar
     for ii = 42:52
         p_col(14:78,ii) = linspace(2,65,numel(14:78));
     end
-    if isempty(S.clim)
-        if div
-            rmin = -max(abs(X));
-        else
-            rmin = min(abs(X));
-        end
-        rmax = max(abs(X));
+    if div
+        rmin = -max(abs(X));
     else
-        rmin = S.clim(1);
-        rmax = S.clim(2);
+        rmin = min(abs(X));
     end
+    rmax = max(abs(X));
 end
 
 
@@ -162,11 +151,7 @@ imagesc(p_all)
 set(gca,'XTickLabel',{},'YTickLabel',{});
 axis image
 
-try
-    clim([0 64])
-catch
-    caxis([0 64])
-end
+clim([0 64])
 overlay_glass_brain('side',S.dark,S.detail);
 overlay_glass_brain('back',S.dark,S.detail);
 overlay_glass_brain('top',S.dark,S.detail);

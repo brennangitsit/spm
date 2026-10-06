@@ -56,7 +56,7 @@ matlabbatch{jobID}.spm.tools.beamforming.view = view;
 % Run job (if required)
 if S.run
     out = spm_jobman('run',matlabbatch);
-    BF = [];
+    BF = out{1,1}.BF{:};
 else
     BF = [];
 end
