@@ -19,6 +19,9 @@ switch lower(arg)
         
     case 'template_ext' 
         varargout = {'.nii'}; % NIfTI format
+
+    case 'get_img_ext' % default image extension for spm_get
+        varargout = {'image'};
         
     case 'pref_img_out_ext'
         varargout = {'.nii'}; % Preferred output format
